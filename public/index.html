@@ -30,7 +30,9 @@
     </div>
 
     <div id="chat-app" class="hidden">
-        <h2>Чат</h2>
+        <h2>Чат
+          <button onclick="logout()" style="float: right;">Выйти</button>
+        </h2>
         <div id="chat-box"></div>
         <input type="text" id="message" placeholder="Ваше сообщение">
         <button onclick="sendMessage()">Отправить</button>
@@ -97,6 +99,24 @@
             } catch(e) { console.error(e); }
         }
 
+        // Выход
+
+        function logout() {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.close();
+          }
+          localStorage.removeItem('chatToken');
+          jwtToken = null;
+          ws = null;
+          document.getElementById('chat-app').classList.add('hidden');
+          document.getElementById('register-form').classList.remove('hidden');
+          document.getElementById('chat-box').innerHTML = '';
+          document.getElementById('login-username').value = '';
+          document.getElementById('login-password').value = '';
+          document.getElementById('reg-username').value = '';
+          document.getElementById('reg-password').value = '';
+        }
+
         // Подключение WebSocket
         function connectWebSocket() {
             if (ws && ws.readyState === WebSocket.OPEN) return;
@@ -129,6 +149,7 @@
             const savedToken = localStorage.getItem('chatToken');
             if (savedToken) {
                 jwtToken = savedToken;
+                // Можно быстро проверить валидность токена (опционально)
                 document.getElementById('register-form').classList.add('hidden');
                 document.getElementById('login-form').classList.add('hidden');
                 document.getElementById('chat-app').classList.remove('hidden');
