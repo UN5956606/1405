@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fastify Chat</title>
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 40px auto; }
+        .hidden { display: none; }
+        .error { color: red; }
+        input, button { margin: 5px; padding: 8px; }
+        #chat-box { border: 1px solid #ccc; height: 300px; overflow-y: scroll; margin-top: 10px; padding: 5px; }
+    </style>
+</head>
+<body>
+    <div id="register-form">
+        <h2>Регистрация</h2>
+        <input type="text" id="reg-username" placeholder="Имя пользователя"><br>
+        <input type="password" id="reg-password" placeholder="Пароль"><br>
+        <button onclick="register()">Зарегистрироваться</button>
+        <div id="reg-error" class="error"></div>
+        <p>Уже есть аккаунт? <button onclick="showLogin()">Войти</button></p>
+    </div>
+
+    <div id="login-form" class="hidden">
+        <h2>Вход</h2>
+        <input type="text" id="login-username" placeholder="Имя пользователя"><br>
+        <input type="password" id="login-password" placeholder="Пароль"><br>
+        <button onclick="login()">Войти</button>
+        <div id="login-error" class="error"></div>
+        <p>Нет аккаунта? <button onclick="showRegister()">Регистрация</button></p>
+    </div>
+
+    <div id="chat-app" class="hidden">
+        <h2>Чат</h2>
+        <div id="chat-box"></div>
+        <input type="text" id="message" placeholder="Ваше сообщение">
+        <button onclick="sendMessage()">Отправить</button>
+    </div>
+
+    <script>
+        let ws = null;
+        let jwtToken = null;
+
+        // Переключение между формами
+        function showLogin() {
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+        }
+        function showRegister() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+        }
+
+        // Рега
+        async function register() {
+            const username = document.getElementById('reg-username').value;
+            const password = document.getElementById('reg-password').value;
+            try {
+                const res = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                if (res.ok) {
+                    alert('Регистрация успешна! Теперь войдите.');
+                    showLogin();
+                } else {
+                    const err = await res.json();
+                    document.getElementById('reg-error').innerText = err.message || 'Ошибка регистрации';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        // Вход
+        async function login() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    jwtToken = data.token;
+                    // Сохраняем токен, чтобы при перезагрузке не входить заново
+                    localStorage.setItem('chatToken', jwtToken);
+                    // Прячем формы и показываем чат
+                    document.getElementById('register-form').classList.add('hidden');
+                    document.getElementById('login-form').classList.add('hidden');
+                    document.getElementById('chat-app').classList.remove('hidden');
+                    connectWebSocket();
+                } else {
+                    const err = await res.json();
+                    document.getElementById('login-error').innerText = err.message || 'Ошибка входа';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        // Подключение WebSocket
+        function connectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) return;
+            console.log('Токен для WebSocket:', jwtToken);
+            if (!jwtToken) alert('Нет токена! Войдите заново.');
+            ws = new WebSocket(`ws://localhost:3000/chat?token=${jwtToken}`);
+            ws.onopen = () => console.log('WebSocket соединение установлено');
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                const chatBox = document.getElementById('chat-box');
+                chatBox.innerHTML += `<div><b>${msg.username}:</b> ${msg.text} <small>(${msg.timestamp})</small></div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            };
+            ws.onclose = () => console.log('WebSocket закрыт');
+            ws.onerror = (err) => console.error('WebSocket ошибка', err);
+        }
+
+        function sendMessage() {
+            const text = document.getElementById('message').value.trim();
+            if (text && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ text }));
+                document.getElementById('message').value = '';
+            } else {
+                alert('Соединение не установлено. Попробуйте перезагрузить страницу.');
+            }
+        }
+
+        //проверяем сохранённый токен
+        window.onload = () => {
+            const savedToken = localStorage.getItem('chatToken');
+            if (savedToken) {
+                jwtToken = savedToken;
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('chat-app').classList.remove('hidden');
+                connectWebSocket();
+            } else {
+                showRegister();
+            }
+        };
+    </script>
+</body>
+</html>
