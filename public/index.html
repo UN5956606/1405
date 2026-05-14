@@ -1,14 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Fastify Chat</title>
-    <style>
-        body { font-family: Arial; max-width: 600px; margin: 40px auto; }
-        .hidden { display: none; }
-        .error { color: red; }
-        input, button { margin: 5px; padding: 8px; }
-        #chat-box { border: 1px solid #ccc; height: 300px; overflow-y: scroll; margin-top: 10px; padding: 5px; }
-    </style>
+    <title>Krutoi Chat</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div id="register-form">
@@ -30,134 +24,17 @@
     </div>
 
     <div id="chat-app" class="hidden">
-        <h2>Чат
-          <button onclick="logout()" style="float: right;">Выйти</button>
-        </h2>
-        <div id="chat-box"></div>
+      <div class="chat-header">
+          <h2>Чат</h2>
+          <button onclick="logout()">Выйти</button>
+      </div>
+      <div id="chat-box"></div>
+      <div class="message-input-area">
         <input type="text" id="message" placeholder="Ваше сообщение">
         <button onclick="sendMessage()">Отправить</button>
     </div>
+</div>
 
-    <script>
-        let ws = null;
-        let jwtToken = null;
-
-        // Переключение между формами
-        function showLogin() {
-            document.getElementById('register-form').classList.add('hidden');
-            document.getElementById('login-form').classList.remove('hidden');
-        }
-        function showRegister() {
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('register-form').classList.remove('hidden');
-        }
-
-        // Рега
-        async function register() {
-            const username = document.getElementById('reg-username').value;
-            const password = document.getElementById('reg-password').value;
-            try {
-                const res = await fetch('/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                if (res.ok) {
-                    alert('Регистрация успешна! Теперь войдите.');
-                    showLogin();
-                } else {
-                    const err = await res.json();
-                    document.getElementById('reg-error').innerText = err.message || 'Ошибка регистрации';
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        // Вход
-        async function login() {
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
-            try {
-                const res = await fetch('/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    jwtToken = data.token;
-                    // Сохраняем токен, чтобы при перезагрузке не входить заново
-                    localStorage.setItem('chatToken', jwtToken);
-                    // Прячем формы и показываем чат
-                    document.getElementById('register-form').classList.add('hidden');
-                    document.getElementById('login-form').classList.add('hidden');
-                    document.getElementById('chat-app').classList.remove('hidden');
-                    connectWebSocket();
-                } else {
-                    const err = await res.json();
-                    document.getElementById('login-error').innerText = err.message || 'Ошибка входа';
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        // Выход
-
-        function logout() {
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.close();
-          }
-          localStorage.removeItem('chatToken');
-          jwtToken = null;
-          ws = null;
-          document.getElementById('chat-app').classList.add('hidden');
-          document.getElementById('register-form').classList.remove('hidden');
-          document.getElementById('chat-box').innerHTML = '';
-          document.getElementById('login-username').value = '';
-          document.getElementById('login-password').value = '';
-          document.getElementById('reg-username').value = '';
-          document.getElementById('reg-password').value = '';
-        }
-
-        // Подключение WebSocket
-        function connectWebSocket() {
-            if (ws && ws.readyState === WebSocket.OPEN) return;
-            console.log('Токен для WebSocket:', jwtToken);
-            if (!jwtToken) alert('Нет токена! Войдите заново.');
-            ws = new WebSocket(`ws://localhost:3000/chat?token=${jwtToken}`);
-            ws.onopen = () => console.log('WebSocket соединение установлено');
-            ws.onmessage = (event) => {
-                const msg = JSON.parse(event.data);
-                const chatBox = document.getElementById('chat-box');
-                chatBox.innerHTML += `<div><b>${msg.username}:</b> ${msg.text} <small>(${msg.timestamp})</small></div>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
-            };
-            ws.onclose = () => console.log('WebSocket закрыт');
-            ws.onerror = (err) => console.error('WebSocket ошибка', err);
-        }
-
-        function sendMessage() {
-            const text = document.getElementById('message').value.trim();
-            if (text && ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ text }));
-                document.getElementById('message').value = '';
-            } else {
-                alert('Соединение не установлено. Попробуйте перезагрузить страницу.');
-            }
-        }
-
-        //проверяем сохранённый токен
-        window.onload = () => {
-            const savedToken = localStorage.getItem('chatToken');
-            if (savedToken) {
-                jwtToken = savedToken;
-                // Можно быстро проверить валидность токена (опционально)
-                document.getElementById('register-form').classList.add('hidden');
-                document.getElementById('login-form').classList.add('hidden');
-                document.getElementById('chat-app').classList.remove('hidden');
-                connectWebSocket();
-            } else {
-                showRegister();
-            }
-        };
-    </script>
+    <script src="/scriptMain.js"></script>
 </body>
 </html>
