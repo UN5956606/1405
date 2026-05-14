@@ -1,4 +1,4 @@
-const fastify = require('fastify')({ logger: true });
+const fastify = require('fastify')({ logger: false });
 const path = require('path');
 const db = require('./database');
 const authRoutes = require('./routes/auth');
@@ -18,7 +18,7 @@ fastify.register(chatRoutes);
 const start = async () => {
   try {
     await fastify.listen({ port: 3000, host: '0.0.0.0' });
-    console.log('Сервер запущен на http://localhost:3000');
+    console.log('Сервер запущен на \x1b[32mhttp://localhost:3000\x1b[0m');
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
