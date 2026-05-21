@@ -31,7 +31,7 @@ if (!hasRole) {
 const adminExists = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
 if (!adminExists) {
   const bcrypt = require('bcrypt');
-  const hashed = bcrypt.hashSync('admin123', 10);
+  const hashed = bcrypt.hashSync('admin', 10);
   db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)')
     .run('admin', hashed, 'admin');
 }
