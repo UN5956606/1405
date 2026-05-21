@@ -43,10 +43,28 @@ async function login() {
             const data = await res.json();
             jwtToken = data.token;
             localStorage.setItem('chatToken', jwtToken);
+            localStorage.setItem('userRole', data.role);
             document.getElementById('register-form').classList.add('hidden');
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('chat-app').classList.remove('hidden');
             connectWebSocket();
+
+            if (data.role === 'admin') {
+                const chatHeader = document.querySelector('.chat-header');
+                if (!document.getElementById('admin-link')) {
+                    const adminLink = document.createElement('a');
+                    adminLink.id = 'admin-link';
+                    adminLink.href = '/admin.html';
+                    adminLink.innerText = 'Админ-панель';
+                    adminLink.style.marginLeft = '15px';
+                    adminLink.style.color = 'white';
+                    adminLink.style.textDecoration = 'none';
+                    adminLink.style.backgroundColor = '#28a745';
+                    adminLink.style.padding = '5px 10px';
+                    adminLink.style.borderRadius = '5px';
+                    chatHeader.appendChild(adminLink);
+                }
+            }
         } else {
             const err = await res.json();
             document.getElementById('login-error').innerText = err.message || 'Ошибка входа';

@@ -26,7 +26,7 @@ async function authRoutes(fastify, options) {
 
   fastify.post('/login', async (req, reply) => {
     const { username, password } = req.body;
-    const user = db.prepare('SELECT id, username, password_hash FROM users WHERE username = ?').get(username);
+    const user = db.prepare('SELECT id, username, password_hash, role FROM users WHERE username = ?').get(username);
     if (!user) {
       return reply.code(401).send({ message: 'Неверные данные' });
     }
@@ -35,9 +35,9 @@ async function authRoutes(fastify, options) {
     if (!isValid) {
       return reply.code(401).send({ message: 'Неверные данные' });
     }
-
-    const token = fastify.jwt.sign({ id: user.id, username: user.username }, { expiresIn: '24h' });
-    reply.send({ token, username: user.username });
+    
+    const token = fastify.jwt.sign({ id: user.id, username: user.username, role: user.role }, { expiresIn: '24h' });
+    reply.send({ token, username: user.username, role: user.role });
   });
 }
 

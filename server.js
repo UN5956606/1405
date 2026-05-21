@@ -3,6 +3,7 @@ const path = require('path');
 const db = require('./database');
 const authRoutes = require('./routes/auth');
 const chatRoutes = require('./routes/chat');
+const adminRoutes = require('./routes/admin');
 
 fastify.register(require('@fastify/jwt'), { secret: 'supersecretkey' });
 fastify.register(require('@fastify/websocket'));
@@ -14,6 +15,7 @@ fastify.register(require('@fastify/static'), {
 fastify.decorate('db', db);
 fastify.register(authRoutes);
 fastify.register(chatRoutes);
+fastify.register(adminRoutes);
 
 const start = async () => {
   try {
